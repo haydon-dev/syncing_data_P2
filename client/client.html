@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+	
+		var draws = {};
+		var ctx;
+		
+		function doMouseDown(mouse, wsocket){
+			//Add new object to my draw stack
+			var time = new Date().getTime();
+			var newObj = {
+				x : mouse.x,
+				y : mouse.y,
+				width : 50,
+				height : 50,
+				owner : wsocket.name
+			};
+			draws[time] = newObj;
+			//Emit new object to server
+			//TODO: How to use a socket inside an event callback?
+			wsocket.emit('newObj', {
+				time: time,
+				object: newObj
+			});
+			//Redraw
+			redrawCanvas(wsocket.name);
+		}
+		
+		//Clears and redraws the canvas
+		function redrawCanvas(name){
+			var priorColor = ctx.fillStyle;
+			ctx.fillStyle = 'white';
+			ctx.fillRect(0,0,ctx.width,ctx.height);
+			//Loop through the keys in draws, drawing each object in order
+			var keys = Object.keys(draws);
+			for(var i = 0; i < keys.length; i++){
+				var object = draws[keys[i]];
+				//Draw objects from others in red
+				if(object.owner === name)
+					ctx.fillStyle = 'black';
+				else
+					ctx.fillStyle = 'blue';
+				ctx.fillRect(object.x,object.y,object.width,object.height);
+			}
+			
+			//Return the fillStyle to priorColor just in case
+			ctx.fillStyle = priorColor;
+		}
+		
+		//Helper function, returns the mouse's position on the canvas
+		function getMouse(e){
+				var mouse = {}
+				mouse.x = e.pageX - canvas.offsetLeft;
+  				mouse.y = e.pageY - canvas.offsetTop;
+  				return mouse;
+		}
+		
+		function init() {
+			var canvasE = document.querySelector('canvas');
+			ctx = canvasE.getContext('2d');
+			//Store canvas' dimensions on the global ctx variable
+			ctx.width = canvasE.width;
+			ctx.height = canvasE.height;
+			
+            var socket = io.connect('localhost');
+			
+			socket.emit('join');
+			
+			socket.on('helloClient', function(data){
+				console.log('connected to server');
+				socket.name = data.name;
+			});
+			
+			socket.on('newObj', function(data){
+				makeNewObj(data, socket);
+			});
+			
+			canvasE.addEventListener("mousedown", function(e){
+				doMouseDown(getMouse(e), socket);
+			});
+			
+			//Add a randomly placed rectangle to the stack
+			draws[new Date().getTime()] = {
+				x : (Math.random() * ctx.width - 50),
+				y : (Math.random() * ctx.height - 50),
+				width : 50,
+				height : 50,
+				owner : 0
+			};
+			//Draw the canvas
+			redrawCanvas(socket.name);
+		}
+		
+		//Add a new object to the stack
+		function makeNewObj(dataIn, wsocket){
+			if(!dataIn.time || !dataIn.object)
+				console.log("data received with invalid object!");
+			//Adds incoming object to the stack
+			draws[dataIn.time] = dataIn.object;
+			redrawCanvas(wsocket.name);
+		}
+		
+	
+        //when the page is loaded, call init
+		window.onload = init;
+	</script>
+	<style>
+		body {
+			display: block;
+			background-color: #AAAAFF;
+		}
+	</style>
+</head>
+<body>
+	<p>Click to add objects</p>
+	<canvas id="canvas" height="400" width="600"></canvas>
+</body>
+</html>
