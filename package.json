@@ -2,7 +2,7 @@
   "name": "part2",
   "version": "1.0.0",
   "description": "Syncs objects onto client's canvas",
-  "main": "client.html",
+  "main": ".src/app.js",
   "scripts": {
 	"start": "node ./src/server.js",
     "pretest": "jshint ./src",
@@ -17,6 +17,10 @@
     "jshint": "^2.5.6"
   },
   "dependencies": {
-    "socket.io": "^1.1.0"
+    "socket.io": "^1.1.0",
+    "cookie-parser": "~1.3.3",
+    "serve-favicon": "~2.1.5",
+    "compression": "~1.1.1",
+    "express": "~4.9.7"
   }
  }

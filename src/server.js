@@ -1,8 +1,32 @@
-//import the websocket library. There are many, but socket.io is one of the most common and feature rich
+var path = require('path');
+var express = require('express');
+var compression = require('compression');
+var favicon = require('serve-favicon');
+var cookieParser = require('cookie-parser');
+var router = require('./router.js');
+
+
 var socketio = require('socket.io');
 
-//start a socketio server and grab the server as io
-var io = socketio.listen(31415);
+var app = express();
+app.use('/assets', express.static(path.resolve(__dirname+'../../client/')));
+app.use(compression());
+app.set('view engine', 'jade');
+app.set('views', __dirname+'../../client/template');
+app.use(favicon(__dirname+'../../client/img/favicon.png'));
+app.use(cookieParser());
+
+router(app);
+var port = process.env.PORT || process.env.NODE_PORT || 5000;
+var server = app.listen(port, function(err){
+	if(err)
+		throw err;
+	console.log('listening on port ' + port);
+});
+
+
+var io = socketio.listen(server);
+
 
 //object to hold all of our connected users
 var users = {};
